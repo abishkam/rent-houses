@@ -18,21 +18,25 @@ import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventAttendee;
 import com.google.api.services.calendar.model.EventDateTime;
-import com.google.api.services.calendar.model.Events;
+import com.renthouses.enviroment.dto.FreeDateDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.GeneralSecurityException;
-import java.util.Arrays;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
-public class CalendarApiServices {
+@Service
+public class CalendarApiConfiguration {
 
     /**
      * Application name.
@@ -54,6 +58,7 @@ public class CalendarApiServices {
     private static final List<String> SCOPES =
             Collections.singletonList(CalendarScopes.CALENDAR);
     private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    String calendarId = "7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com";
 
     private Credential credential;
     private String refreshToken;
@@ -114,70 +119,144 @@ public class CalendarApiServices {
     private GoogleClientSecrets loadClientSecrets()
             throws IOException {
 
-        InputStream in = CalendarApiServices.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        InputStream in = CalendarApiConfiguration.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
 
         return GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
     }
 
-    public static void main(String... args) throws IOException, GeneralSecurityException {
+    public static Calendar getService() throws IOException, GeneralSecurityException {
         // Build a new authorized API client service.
-        CalendarApiServices calendarApiServices = new CalendarApiServices();
-        Credential credential = calendarApiServices.authorize();
+        CalendarApiConfiguration calendarApiConfiguration = new CalendarApiConfiguration();
+        Credential credential = calendarApiConfiguration.authorize();
         Calendar service = new Calendar.Builder(GoogleNetHttpTransport.newTrustedTransport(), JSON_FACTORY, credential)
                 .setApplicationName(APPLICATION_NAME)
                 .build();
 
+        return service;
+    }
 
-        Event event = new Event()
-                .setSummary("Тут")
-                .setDescription("Description");
+    public static void main(String[] args) throws GeneralSecurityException, IOException {
+        Event event = new Event();
+        String date = "2023-10-25";
+        int quantityOfDays = 3;
+        String calendarId = "7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com";
 
-        DateTime startDateTime = new DateTime("2023-09-11T10:00:00+03:00");
+        DateTime dateToBook = new DateTime(date+"T14:00:00+03:00");
         EventDateTime start = new EventDateTime()
-                .setDateTime(startDateTime)
+                .setDateTime(dateToBook)
                 .setTimeZone("Europe/Moscow");
         event.setStart(start);
 
-        DateTime endDateTime = new DateTime("2023-09-11T11:00:00+03:00");
+        org.joda.time.DateTime endDateTime = new org.joda.time.DateTime(dateToBook.getValue());
+        endDateTime = endDateTime.plusDays(quantityOfDays);
+        endDateTime = endDateTime.minusHours(3);
+
+        DateTime lastDate = new DateTime(endDateTime.getMillis());
         EventDateTime end = new EventDateTime()
-                .setDateTime(endDateTime)
+                .setDateTime(lastDate)
                 .setTimeZone("Europe/Moscow");
         event.setEnd(end);
 
-        String[] recurrence = new String[] {"RRULE:FREQ=DAILY;COUNT=2"};
-        event.setRecurrence(Arrays.asList(recurrence));
+        endDateTime = endDateTime.plusDays(27);
+        EventDateTime extremeNumber = new EventDateTime()
+                .setDateTime(new DateTime(endDateTime.getMillis()))
+                .setTimeZone("Europe/Moscow");
 
-        EventAttendee[] attendees = new EventAttendee[] {
-                new EventAttendee().setEmail("mollaev6@mail.ru"),
-        };
-        event.setAttendees(Arrays.asList(attendees));
+        List<Integer> allColors = new ArrayList<>(List.of(new Integer[]{11, 8, 5}));
 
-        String calendarId = "7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com";
-        event = service.events().insert(calendarId, event).execute();
-        System.out.printf("Event created: %s\n", event.getHtmlLink());
-
-        // List the next 10 events from the primary calendar.
-        DateTime now = new DateTime(System.currentTimeMillis());
-        Events events = service.events().list("7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com")
-                .setMaxResults(10)
-                .setTimeMin(now)
+        Map<Integer, org.joda.time.DateTime> collectTime = getService().events().list(calendarId)
+                .setTimeMin(dateToBook)
+                .setMaxResults(20)
                 .setOrderBy("startTime")
                 .setSingleEvents(true)
-                .execute();
+                .execute()
+                .getItems()
+                .stream()
+                .collect(Collectors.toMap(
+                        i -> Integer.valueOf(i.getColorId()),
+                        i -> new org.joda.time.DateTime(i.getStart().getDateTime().getValue()),
+                        (o,n) -> o
+                        )
+                );
 
-
-        List<Event> items = events.getItems();
-        if (items.isEmpty()) {
-            System.out.println("No upcoming events found.");
-        } else {
-            System.out.println("Upcoming events");
-            for (Event event1 : items) {
-                DateTime start1 = event.getStart().getDateTime();
-                if (start1 == null) {
-                    start1 = event.getStart().getDate();
-                }
-                System.out.printf("%s (%s)\n", event1.getSummary(), start);
-            }
+        for (int c: allColors) {
+            collectTime.putIfAbsent(c, new org.joda.time.DateTime(extremeNumber.getDateTime().getValue()));
         }
+
+
+//        event = getService().events().insert(calendarId, event).execute();
+    }
+
+    public FreeDateDto getFreeDate(String date) throws GeneralSecurityException, IOException {
+
+        //todo process port io exception
+
+        if(LocalDate.parse(date).isBefore(LocalDate.now())){
+            return FreeDateDto.builder()
+                    .message("Напишите актуальную дату")
+                    .isFree(false)
+                    .build();
+        }
+
+        DateTime dateToBook = new DateTime(date+"T14:00:00+03:00");
+
+        org.joda.time.DateTime dateTime = new org.joda.time.DateTime(dateToBook.getValue());
+        dateTime = dateTime.plusMonths(1);
+        DateTime lastDate = new DateTime(dateTime.getMillis());
+        EventDateTime eventlastDate = new EventDateTime();
+        eventlastDate.setDateTime(lastDate);
+
+        List<Integer> allColors = new ArrayList<>(List.of(new Integer[]{11, 8, 5}));
+        Map<Integer, List<EventDateTime>> startTime = getService().events().list(calendarId)
+                .setTimeMin(dateToBook)
+                .setTimeMax(lastDate)//+30 дней
+                .setOrderBy("startTime")
+                .setSingleEvents(true)
+                .execute()
+                .getItems()
+                .stream()
+                .collect(Collectors.groupingBy(
+                        i -> Integer.parseInt(i.getColorId()),
+                        Collectors.mapping(Event::getStart, Collectors.toList())
+                ));
+
+
+        if(startTime.size()>0 && startTime
+                .values()
+                .stream()
+                .allMatch(i ->i.get(0).getDateTime().equals(dateToBook))){
+
+            return FreeDateDto.builder()
+                    .message("На эту дату все домики заняты")
+                    .isFree(false)
+                    .build();
+        }
+
+        for (int c: allColors) {
+            startTime.putIfAbsent(c, Collections.singletonList(eventlastDate));
+        }
+        FreeDateDto freeDateDto = startTime
+                .entrySet()
+                .stream()
+                .filter(eventDateTimes -> !(eventDateTimes.getValue().get(0).getDateTime().equals(dateToBook)))
+                .max((a, b) -> (int) (a.getValue().get(0).getDateTime().getValue() - b.getValue().get(0).getDateTime().getValue()))
+                .map(i -> {
+                    long dateValue = i.getValue().get(0).getDateTime().getValue();
+                    boolean comparison = dateValue >= eventlastDate.getDateTime().getValue();
+                    return FreeDateDto.builder()
+                            //todo починить выбор варианта
+                            .message(comparison ? "Домик свободный до "
+                                    + new DateTime(dateValue).toString().substring(0, 10)
+                                    + "\nВыберите количество дней"
+                                    : "Выберите количество дней")
+                            .colorId(i.getKey())
+                            .freeDate(new DateTime(dateValue))
+                            .isFree(true)
+                            .build();
+                })
+                .get();
+
+
+        return freeDateDto;
     }
 }
