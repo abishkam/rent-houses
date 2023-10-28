@@ -16,15 +16,6 @@ import java.util.stream.IntStream;
 @Component
 @RequiredArgsConstructor
 public class DateButton extends Button {
-    private final CalendarApiConfiguration calendar;
-
-    public static void main(String[] args) {
-        int number = 23;
-
-        int closestMultipleOfTen = (number / 10) * 10;
-
-        System.out.println(closestMultipleOfTen);
-    }
 
     @Override
     public EditMessageText editMessage(Update update) {

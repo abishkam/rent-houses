@@ -1,0 +1,10 @@
+server:
+  port: 8081
+
+com.google.calendar:
+  clientId:
+  projectId:
+  clientSecret:
+  localhost:
+  redirectPort:
+  refreshToken:

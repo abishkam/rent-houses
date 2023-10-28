@@ -16,7 +16,6 @@ public class FreeDateMessage extends Message{
         String message =
                 "Напишите желаемую дату броинрования в формате год-месяц-день. Например: 2023-07-05";
 
-
         return new SendMessage(chatId, message);
     }
 
