@@ -1,6 +1,11 @@
 server:
   port: 8081
 
+com.renthouse.enviroment:
+  telegram:
+    botUserName:
+    botToken:
+
 com.google.calendar:
   clientId:
   projectId:
@@ -8,3 +13,4 @@ com.google.calendar:
   localhost:
   redirectPort:
   refreshToken:
+  calendarId:

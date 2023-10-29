@@ -1,19 +1,19 @@
 package com.renthouses.enviroment.buttons;
 
-import com.google.api.client.util.DateTime;
-import com.google.api.services.calendar.model.Event;
 import com.renthouses.enviroment.services.CalendarService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 @Component
 @RequiredArgsConstructor
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class BookingButton extends Button{
 
     private final CalendarService calendarService;

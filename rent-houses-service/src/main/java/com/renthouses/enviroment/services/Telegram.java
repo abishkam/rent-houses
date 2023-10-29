@@ -16,7 +16,6 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 
 import javax.annotation.PostConstruct;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**

@@ -1,4 +1,4 @@
-package com.renthouses.enviroment.services;
+package com.renthouses.enviroment.confifuration;
 
 import com.google.api.client.auth.oauth2.Credential;
 import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
@@ -16,6 +16,7 @@ import com.google.api.client.json.gson.GsonFactory;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
+import com.renthouses.enviroment.properties.GoogleCalendarProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,9 +34,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class CalendarApiConfiguration {
-
-
-    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
 
     private final GoogleCalendarProperties properties;
     private Credential credential;
@@ -70,7 +68,7 @@ public class CalendarApiConfiguration {
                     .build();
 
             credential = new AuthorizationCodeInstalledApp(
-                    flow, receiver).authorize("807338646599-316qm58inficv53a9bqgvjj3n44k80b9.apps.googleusercontent.com");
+                    flow, receiver).authorize(properties.getClientId());
             refreshToken = credential.getRefreshToken();
 
             log.info("---NEW REFRESH TOKEN----------------------------------------------------");
@@ -121,5 +119,7 @@ public class CalendarApiConfiguration {
         return service;
     }
 
-
+    public String getCalendarId() {
+        return properties.getCalendarId();
+    }
 }

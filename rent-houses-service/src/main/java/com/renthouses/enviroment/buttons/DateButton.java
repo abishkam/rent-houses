@@ -1,8 +1,8 @@
 package com.renthouses.enviroment.buttons;
 
-import com.google.api.client.util.DateTime;
-import com.renthouses.enviroment.services.CalendarApiConfiguration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -15,6 +15,7 @@ import java.util.stream.IntStream;
 
 @Component
 @RequiredArgsConstructor
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class DateButton extends Button {
 
     @Override
@@ -41,7 +42,7 @@ public class DateButton extends Button {
         IntStream.rangeClosed(closestMultipleOfTen, quantityOfDays)
                 .sorted()
                 .forEach(i -> {
-                    if (i%10<=5 && i%10!=1) {
+                    if (i%10<=5 && i%10!=0) {
 
                         rows1.add(InlineKeyboardButton.builder()
                                 .text("" + i)

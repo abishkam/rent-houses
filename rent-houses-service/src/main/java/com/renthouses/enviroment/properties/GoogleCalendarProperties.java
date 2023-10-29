@@ -1,4 +1,4 @@
-package com.renthouses.enviroment.services;
+package com.renthouses.enviroment.properties;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -28,6 +28,9 @@ public class GoogleCalendarProperties {
     private String tokenUri = "https://oauth2.googleapis.com/token";
 
     private String authProviderX509CertUrl = "https://www.googleapis.com/oauth2/v1/certs";
+
+    @NotBlank
+    private String calendarId;
 
     @NotBlank
     private String clientSecret;

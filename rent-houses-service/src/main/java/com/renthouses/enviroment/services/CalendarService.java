@@ -3,7 +3,9 @@ package com.renthouses.enviroment.services;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.renthouses.enviroment.confifuration.CalendarApiConfiguration;
 import com.renthouses.enviroment.dto.FreeDateDto;
+import com.renthouses.enviroment.dto.Pair;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +13,8 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -23,35 +23,24 @@ import java.util.stream.Collectors;
 public class CalendarService {
 
     private final CalendarApiConfiguration cac;
-    String calendarId = "7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com";
 
     public void book(String date, int quantityOfDays) throws GeneralSecurityException, IOException {
 
-        Event event = new Event();
-
         DateTime dateToBook = new DateTime(date);
         org.joda.time.DateTime dateToBookJoda = new org.joda.time.DateTime(dateToBook.getValue());
-        EventDateTime start = new EventDateTime()
-                .setDateTime(dateToBook)
-                .setTimeZone("Europe/Moscow");
-        event.setStart(start);
+        EventDateTime start = createEdt(dateToBook);
 
-        org.joda.time.DateTime endJoda = new org.joda.time.DateTime(dateToBook.getValue());
-        endJoda = endJoda.plusDays(quantityOfDays);
-        endJoda = endJoda.minusHours(3);
-
+        org.joda.time.DateTime endJoda = dateToBookJoda
+                .plusDays(quantityOfDays)
+                .minusHours(3);
         DateTime lastDate = new DateTime(endJoda.getMillis());
-        EventDateTime end = new EventDateTime()
-                .setDateTime(lastDate)
-                .setTimeZone("Europe/Moscow");
-        event.setEnd(end);
-
+        EventDateTime end = createEdt(lastDate);
         endJoda = endJoda.plusDays(27);
-        org.joda.time.DateTime endJoda2 = new org.joda.time.DateTime(endJoda);
+        final org.joda.time.DateTime finalEndJoda = endJoda;
 
         List<Integer> allColors = new ArrayList<>(List.of(new Integer[]{11, 8, 5}));
 
-        Map<Integer, List<org.joda.time.DateTime>> collectTime = cac.getService().events().list(calendarId)
+        Map<Integer, List<org.joda.time.DateTime>> collectTime = cac.getService().events().list(cac.getCalendarId())
                 .setTimeMin(dateToBook)
                 .setMaxResults(20)
                 .setOrderBy("startTime")
@@ -81,7 +70,7 @@ public class CalendarService {
                                 if(i.getValue().size()>1){
                                     return i.getValue().get(1);
                                 } else {
-                                    return endJoda2;
+                                    return finalEndJoda;
                                 }
                             } else {
                                 return i.getValue().get(0);
@@ -90,7 +79,7 @@ public class CalendarService {
                 ));
 
         for (int c: allColors) {
-            endTime.putIfAbsent(c, endJoda2);
+            endTime.putIfAbsent(c, endJoda);
         }
 
         Integer first = endTime.entrySet()
@@ -101,7 +90,7 @@ public class CalendarService {
                 .findFirst()
                 .get();
 
-        cac.getService().events().insert(calendarId, new Event()
+        cac.getService().events().insert(cac.getCalendarId(), new Event()
                 .setStart(start)
                 .setEnd(end)
                 .setColorId(String.valueOf(first))).execute();
@@ -120,14 +109,11 @@ public class CalendarService {
 
         DateTime dateToBook = new DateTime(date+"T14:00:00+03:00");
 
-        org.joda.time.DateTime dateTime = new org.joda.time.DateTime(dateToBook.getValue());
-        dateTime = dateTime.plusMonths(1);
-        DateTime lastDate = new DateTime(dateTime.plusMonths(1).getMillis());
-        EventDateTime eventlastDate = new EventDateTime();
-        eventlastDate.setDateTime(lastDate);
+        org.joda.time.DateTime dateToBookJoda= new org.joda.time.DateTime(dateToBook.getValue());
+        DateTime lastDate = new DateTime(dateToBookJoda.plusMonths(1).getMillis());
 
         List<Integer> allColors = new ArrayList<>(List.of(new Integer[]{11, 8, 5}));
-        Map<Integer, List<EventDateTime>> startTime = cac.getService().events().list(calendarId)
+        Map<Integer, Pair<org.joda.time.DateTime>> startTime = cac.getService().events().list(cac.getCalendarId())
                 .setTimeMin(dateToBook)
                 .setTimeMax(lastDate)//+30 дней
                 .setOrderBy("startTime")
@@ -135,16 +121,27 @@ public class CalendarService {
                 .execute()
                 .getItems()
                 .stream()
-                .collect(Collectors.groupingBy(
+                .collect(Collectors.toMap(
                         i -> Integer.parseInt(i.getColorId()),
-                        Collectors.mapping(Event::getStart, Collectors.toList())
-                ));
+                        i -> new Pair<org.joda.time.DateTime>(
+                                        new org.joda.time.DateTime(i.getStart().getDateTime().getValue()),
+                                        new org.joda.time.DateTime(i.getEnd().getDateTime().getValue())
+                                ),
+                                (o,n) -> o
+                        )
+                        );
 
+        for (int c: allColors) {
+            startTime.putIfAbsent(c, new Pair<org.joda.time.DateTime>(dateToBookJoda.plusMonths(1), dateToBookJoda));
+        }
 
         if(startTime.size()>0 && startTime
                 .values()
                 .stream()
-                .allMatch(i ->i.get(0).getDateTime().equals(dateToBook))){
+                .allMatch(i ->
+                        ((i.getFitst().isBefore(dateToBookJoda) || i.getFitst().isEqual(dateToBookJoda))
+                     && (i.getSecond().isAfter(dateToBookJoda)) || (i.getFitst().isEqual(dateToBookJoda))
+                        ))){
 
             return FreeDateDto.builder()
                     .message("На эту дату все домики заняты")
@@ -152,31 +149,36 @@ public class CalendarService {
                     .build();
         }
 
-        for (int c: allColors) {
-            startTime.putIfAbsent(c, Collections.singletonList(eventlastDate));
-        }
-
         FreeDateDto freeDateDto = startTime
                 .entrySet()
                 .stream()
-                .filter(eventDateTimes -> !(eventDateTimes.getValue().get(0).getDateTime().equals(dateToBook)))
-                .max((a, b) -> (int) (a.getValue().get(0).getDateTime().getValue() - b.getValue().get(0).getDateTime().getValue()))
+                //Убираем те домики, которые уже забронированы на этот день
+                .filter(eventDateTimes -> !eventDateTimes.getValue().getFitst().equals(dateToBook.getValue()) &&
+                        !eventDateTimes.getValue().getFitst().isBefore(dateToBook.getValue()))
+                //Вычисляем до какого крайнего числа можно забронировать домик
+                .max((a, b) -> (int) (a.getValue().getFitst().getMillis() - b.getValue().getFitst().getMillis()))
                 .map(i -> {
-                    long dateValue = i.getValue().get(0).getDateTime().getValue();
+                    long dateValue = i.getValue().getFitst().getMillis();
                     return FreeDateDto.builder()
                             //todo починить выбор варианта
                             .message("Домик свободный до "
                                     + new DateTime(dateValue).toString().substring(0, 10)
                                     + "\nВыберите количество дней")
                             .colorId(i.getKey())
-                            .startDate(new org.joda.time.DateTime(dateToBook.getValue()))
+                            .startDate(dateToBookJoda)
                             .endDate(new org.joda.time.DateTime(dateValue))
                             .isFree(true)
                             .build();
                 })
                 .get();
 
-
         return freeDateDto;
     }
+
+    private EventDateTime createEdt(DateTime dateTime) {
+        return new EventDateTime()
+                .setDateTime(dateTime)
+                .setTimeZone("Europe/Moscow");
+    }
+
 }

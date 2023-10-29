@@ -4,33 +4,27 @@ import com.renthouses.enviroment.dto.FreeDateDto;
 import com.renthouses.enviroment.services.CalendarService;
 import com.renthouses.enviroment.util.RowUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Component
 @RequiredArgsConstructor
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class DateMessage extends Message{
 
     private final CalendarService calendarService;
     private final RowUtil rowUtil;
 
     @Override
-    public SendMessage sendMessage(Update update) throws ParseException {
+    public SendMessage sendMessage(Update update){
         //todo Sneakythrows
 
         String chatId = update.getMessage().getChatId().toString();
