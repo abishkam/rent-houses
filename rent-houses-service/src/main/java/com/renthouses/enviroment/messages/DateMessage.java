@@ -25,7 +25,6 @@ public class DateMessage extends Message{
 
     @Override
     public SendMessage sendMessage(Update update){
-        //todo Sneakythrows
 
         String chatId = update.getMessage().getChatId().toString();
         String startDate = update.getMessage().getText();
@@ -38,7 +37,7 @@ public class DateMessage extends Message{
                 return SendMessage.builder()
                         .chatId(chatId)
                         .text(dto.getMessage())
-                        .replyMarkup(rowUtil.createRows(dto))
+                        .replyMarkup(rowUtil.createRowsDateMessage(dto))
                 .build();
 
             } else {

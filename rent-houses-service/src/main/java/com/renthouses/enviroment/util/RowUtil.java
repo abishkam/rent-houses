@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.IntStream;
 
 /**
  * Util for working with UI telegram.
@@ -15,7 +16,7 @@ import java.util.List;
 @Component
 public class RowUtil {
 
-    public InlineKeyboardMarkup createRows(FreeDateDto dto) {
+    public InlineKeyboardMarkup createRowsDateMessage(FreeDateDto dto) {
         // Вычисляем разницу между датами в миллисекундах
         long differenceInMillis = dto.getEndDate().getMillis() - dto.getStartDate().getMillis();
 
@@ -41,6 +42,39 @@ public class RowUtil {
             quantityOfDays-=10;
         }
         markupLine.setKeyboard(Collections.singletonList(rows));
+
+        return markupLine;
+    }
+
+    public InlineKeyboardMarkup createRowsDateButton(int quantityOfDays, String dateTime, String colorId) {
+        int closestMultipleOfTen = quantityOfDays%10==0? quantityOfDays-9:((quantityOfDays / 10) * 10)+1;
+
+        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
+        List<InlineKeyboardButton> rows1 = new ArrayList<>();
+        List<InlineKeyboardButton> rows2 = new ArrayList<>();
+        List<List<InlineKeyboardButton>> keyboards = new ArrayList<>();
+
+        IntStream.rangeClosed(closestMultipleOfTen, quantityOfDays)
+                .sorted()
+                .forEach(i -> {
+                    if (i%10<=5 && i%10!=0) {
+
+                        rows1.add(InlineKeyboardButton.builder()
+                                .text("" + i)
+                                .callbackData("DateButton#" + i + "#" + dateTime + "#" + colorId)
+                                .build());
+                    } else {
+
+                        rows2.add(InlineKeyboardButton.builder()
+                                .text("" + i)
+                                .callbackData("DateButton#" + i + "#" + dateTime + "#" + colorId)
+                                .build());
+                    }
+                });
+
+        keyboards.add(rows1);
+        keyboards.add(rows2);
+        markupLine.setKeyboard(keyboards);
 
         return markupLine;
     }

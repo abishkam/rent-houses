@@ -53,6 +53,7 @@ public class GoogleCalendarProperties {
                 "    \"token_uri\": \"" + tokenUri +"\",\n" +
                 "    \"auth_provider_x509_cert_url\": \"" + authProviderX509CertUrl +"\",\n" +
                 "    \"client_secret\": \"" + clientSecret +"\"\n" +
+                "    \"calendarId\": \"" + calendarId +"\"\n" +
                 "  }\n" +
                 "}";
     }
