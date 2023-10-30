@@ -18,6 +18,7 @@ public class StartMessage extends Message{
                 "Привет! Это бот для бронирования домиков. Нажмите\n\n" +
                         "/booking - забронировать\n" +
                         "/media - посмотреть домики\n" +
+                        "/freedate - чтобы узнать свободные дни" +
                         "/help - навигация по боту";
 
         return new SendMessage(chatId, message);

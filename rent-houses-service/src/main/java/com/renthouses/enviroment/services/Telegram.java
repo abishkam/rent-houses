@@ -44,16 +44,12 @@ public class Telegram extends TelegramLongPollingBot {
     public void onUpdateReceived(Update update) {
 
         if(update.hasMessage()) {
-            SendMessage sendMessage = null;
-            try {
-                sendMessage = messages.stream()
-                        .filter(i -> i.support(update.getMessage().getText()))
-                        .findFirst()
-                        .get()
-                        .sendMessage(update);
-            } catch (ParseException e) {
-                throw new RuntimeException(e);
-            }
+
+            SendMessage sendMessage = messages.stream()
+                    .filter(i -> i.support(update.getMessage().getText()))
+                    .findFirst()
+                    .get()
+                    .sendMessage(update);
 
             try {
                 execute(sendMessage);

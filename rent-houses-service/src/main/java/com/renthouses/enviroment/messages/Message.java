@@ -8,7 +8,7 @@ import java.text.ParseException;
 public abstract class Message {
 
 
-    public abstract SendMessage sendMessage(Update update) throws ParseException;
+    public abstract SendMessage sendMessage(Update update);
 
     public abstract boolean support(String cmd);
 }
