@@ -3,14 +3,14 @@ server:
 
 com.renthouse.enviroment:
   telegram:
-    botUserName: draftdemobot
-    botToken: 6120411687:AAEavYUjLHae3SKbpgixqNdA-KYWrY2OzSM
+    botUserName:
+    botToken:
 
 com.google.calendar:
-  clientId: 807338646599-316qm58inficv53a9bqgvjj3n44k80b9.apps.googleusercontent.com
-  projectId: rent-houses-398117
-  clientSecret: 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
-  localhost: true
-  redirectPort: 8080
-  refreshToken: ya29.a0AfB_byD3tZwHriwByThzJLwSl4PToTwwkW6KX7z_h4ws2DJW426kCVuIMIe9LhxOgv83EtXPYGPldBcsBJo4DPanfI1OCMl_cKR-cas45iXRg0nNd-j0L35Z67Txd8TQzWXx5suA2t6I6VUVJB15aobZb-6WvA4wossaCgYKAe4SARMSFQGOcNnCe-IEKvRSAFYsbQPSG_KvTA0170
-  calendarId: 7c5f9b9d6dfbae0b42a428dd0162ad10cde6214cb84b3a0cb87fa9f2bd23a436@group.calendar.google.com
+  clientId:
+  projectId:
+  clientSecret:
+  localhost:
+  redirectPort:
+  refreshToken:
+  calendarId:
