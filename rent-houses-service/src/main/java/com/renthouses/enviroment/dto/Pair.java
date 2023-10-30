@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Pair<T>{
 
-    private T fitst;
+    private T first;
     private T second;
 
 }

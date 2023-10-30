@@ -13,8 +13,10 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -90,10 +92,20 @@ public class CalendarService {
                 .findFirst()
                 .get();
 
-        cac.getService().events().insert(cac.getCalendarId(), new Event()
-                .setStart(start)
-                .setEnd(end)
-                .setColorId(String.valueOf(first))).execute();
+        Optional<Integer> second = endTime.entrySet()
+                .stream()
+                .filter(i -> !startTime.containsKey(i.getKey()))
+                .filter(i -> i.getValue().isEqual(dateToBookJoda.plusDays(quantityOfDays)))
+                .map(Map.Entry::getKey)
+                .findFirst();
+
+        second.ifPresentOrElse(
+                i -> commitCng(start, end, i),
+                () -> {
+                    commitCng(start, end, first);
+                }
+        );
+
     }
 
     public FreeDateDto getFreeDate(String date) throws GeneralSecurityException, IOException {
@@ -132,15 +144,15 @@ public class CalendarService {
                         );
 
         for (int c: allColors) {
-            startTime.putIfAbsent(c, new Pair<org.joda.time.DateTime>(dateToBookJoda.plusMonths(1), dateToBookJoda));
+            startTime.putIfAbsent(c, new Pair<org.joda.time.DateTime>(dateToBookJoda.plusMonths(1), dateToBookJoda.plusMonths(1)));
         }
 
         if(startTime.size()>0 && startTime
                 .values()
                 .stream()
                 .allMatch(i ->
-                        ((i.getFitst().isBefore(dateToBookJoda) || i.getFitst().isEqual(dateToBookJoda))
-                     && (i.getSecond().isAfter(dateToBookJoda)) || (i.getFitst().isEqual(dateToBookJoda))
+                        ((i.getFirst().isBefore(dateToBookJoda) || i.getFirst().isEqual(dateToBookJoda))
+                     && i.getSecond().isAfter(dateToBookJoda) || (i.getFirst().isEqual(dateToBookJoda))
                         ))){
 
             return FreeDateDto.builder()
@@ -153,12 +165,11 @@ public class CalendarService {
                 .entrySet()
                 .stream()
                 //Убираем те домики, которые уже забронированы на этот день
-                .filter(eventDateTimes -> !eventDateTimes.getValue().getFitst().equals(dateToBook.getValue()) &&
-                        !eventDateTimes.getValue().getFitst().isBefore(dateToBook.getValue()))
+                .filter(eventDateTimes -> eventDateTimes.getValue().getFirst().isAfter(dateToBook.getValue()))
                 //Вычисляем до какого крайнего числа можно забронировать домик
-                .max((a, b) -> (int) (a.getValue().getFitst().getMillis() - b.getValue().getFitst().getMillis()))
+                .max(Comparator.comparing(a -> a.getValue().getFirst()))
                 .map(i -> {
-                    long dateValue = i.getValue().getFitst().getMillis();
+                    long dateValue = i.getValue().getFirst().getMillis();
                     return FreeDateDto.builder()
                             //todo починить выбор варианта
                             .message("Домик свободный до "
@@ -173,6 +184,17 @@ public class CalendarService {
                 .get();
 
         return freeDateDto;
+    }
+
+    private void commitCng(EventDateTime start, EventDateTime end, int color) {
+        try {
+            cac.getService().events().insert(cac.getCalendarId(), new Event()
+                    .setStart(start)
+                    .setEnd(end)
+                    .setColorId(String.valueOf(color))).execute();
+        } catch (IOException | GeneralSecurityException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private EventDateTime createEdt(DateTime dateTime) {
