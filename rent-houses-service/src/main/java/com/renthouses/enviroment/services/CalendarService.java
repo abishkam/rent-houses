@@ -7,6 +7,7 @@ import com.renthouses.enviroment.confifuration.CalendarApiConfiguration;
 import com.renthouses.enviroment.dto.FreeDateDto;
 import com.renthouses.enviroment.dto.Pair;
 import lombok.RequiredArgsConstructor;
+import org.joda.time.DateTimeConstants;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -111,7 +112,6 @@ public class CalendarService {
     public FreeDateDto getFreeDate(String date) throws GeneralSecurityException, IOException {
 
         //todo process port io exception
-
         if(LocalDate.parse(date).isBefore(LocalDate.now())){
             return FreeDateDto.builder()
                     .message("Напишите актуальную дату")
@@ -157,6 +157,7 @@ public class CalendarService {
 
             return FreeDateDto.builder()
                     .message("На эту дату все домики заняты")
+                    .startDate(dateToBookJoda)
                     .isFree(false)
                     .build();
         }
@@ -184,6 +185,18 @@ public class CalendarService {
                 .get();
 
         return freeDateDto;
+    }
+
+    public List<FreeDateDto> getFreeDateForAWeek(org.joda.time.DateTime date) throws GeneralSecurityException, IOException {
+
+        List<FreeDateDto> list = new ArrayList<>();
+
+        for (int i = date.getDayOfWeek(); i <= date.withDayOfWeek(DateTimeConstants.SUNDAY).getDayOfWeek(); i++) {
+            list.add(getFreeDate(date.withDayOfWeek(i).toString().substring(0, 10)));
+        }
+
+        return list;
+
     }
 
     private void commitCng(EventDateTime start, EventDateTime end, int color) {
