@@ -41,6 +41,6 @@ public class DateButton extends Button {
     @Override
     public boolean support(String cmd) {
         //todo Написать pattern
-        return cmd.startsWith("DateMessage");
+        return cmd.startsWith("DateButton");
     }
 }

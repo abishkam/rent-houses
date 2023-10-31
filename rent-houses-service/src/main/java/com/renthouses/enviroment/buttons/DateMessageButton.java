@@ -54,6 +54,6 @@ public class DateMessageButton extends Button{
 
     @Override
     public boolean support(String cmd) {
-        return cmd.startsWith("FreeDateMessage");
+        return cmd.startsWith("DateMessageButton");
     }
 }

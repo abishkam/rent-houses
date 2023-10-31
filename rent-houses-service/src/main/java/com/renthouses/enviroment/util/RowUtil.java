@@ -34,7 +34,7 @@ public class RowUtil {
             c[i] =c[i-1] + Math.min(quantityOfDays, 10);
             rows.add(InlineKeyboardButton.builder()
                     .text("до " + c[i])
-                    .callbackData("DateMessage#"
+                    .callbackData("DateButton#"
                             + c[i]+"#"
                             +dto.getStartDate()+"#"
                             +dto.getColorId())
@@ -78,4 +78,13 @@ public class RowUtil {
 
         return markupLine;
     }
+
+//    public InlineKeyboardMarkup getBackRow() {
+//        InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
+//        List<InlineKeyboardButton> rows1 = new ArrayList<>();
+//        List<InlineKeyboardButton> rows2 = new ArrayList<>();
+//        List<List<InlineKeyboardButton>> keyboards = new ArrayList<>();
+//
+//
+//    }
 }

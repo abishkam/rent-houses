@@ -1,8 +1,7 @@
-package com.renthouses.enviroment.messages;
+package com.renthouses.enviroment.buttons;
 
 import com.renthouses.enviroment.dto.FreeDateDto;
 import com.renthouses.enviroment.services.CalendarService;
-import com.renthouses.enviroment.util.RowUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.joda.time.DateTime;
@@ -10,6 +9,7 @@ import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -17,33 +17,43 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.util.ArrayList;
 import java.util.List;
 
-
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RequiredArgsConstructor
-public class FreeDateMessage extends Message{
+public class FreeDateMessageButton extends Button{
 
-    private final CalendarService service;
+    private final CalendarService calendarService;
 
     @SneakyThrows
     @Override
-    public SendMessage sendMessage(Update update) {
+    public EditMessageText editMessage(Update update) {
         //todo Исправить message
-        String chatId = update.getMessage().getChatId().toString();
+        //todo Надо округлить dateTime
+        String chatId = update.getCallbackQuery().getMessage().getChatId().toString();
 
         String message =
                 "Напишите желаемую дату броинрования в формате год-месяц-день. Например: 2023-07-05";
+        String[] callbacks = update.getCallbackQuery().getData().split("#");
+        DateTime dateTime = DateTime.parse(callbacks[2]);
+        List<FreeDateDto> freeDateForAWeek = null;
 
-        List<FreeDateDto> freeDateForAWeek = service.getFreeDateForAWeek(DateTime.now());
+        if(callbacks[1].equals("back") && DateTime.now().isBefore(dateTime.minusWeeks(1))){
+            dateTime = dateTime.minusWeeks(1);
+            freeDateForAWeek = calendarService.getFreeDateForAWeek(dateTime);
+        } else if(callbacks[1].equals("forward")) {
+            dateTime = dateTime.plusWeeks(1);
+            freeDateForAWeek = calendarService.getFreeDateForAWeek(dateTime);
+        } else {
+            freeDateForAWeek = calendarService.getFreeDateForAWeek(DateTime.now());
+        }
 
         InlineKeyboardMarkup markupLine = new InlineKeyboardMarkup();
         List<List<InlineKeyboardButton>> keyboards = new ArrayList<>();
         String text;
         String callback;
         for (FreeDateDto date:
-             freeDateForAWeek) {
+                freeDateForAWeek) {
             List<InlineKeyboardButton> row = new ArrayList<>();
-
             if(date.getMessage().startsWith("На эту дату все домики заняты")) {
                 text = date.getStartDate().toString().substring(5,10) + " : " + date.getMessage();
                 callback = "NoHousesButton#" +
@@ -59,22 +69,23 @@ public class FreeDateMessage extends Message{
                     .build());
             keyboards.add(row);
         }
+
         List<InlineKeyboardButton> row = new ArrayList<>();
         row.add(InlineKeyboardButton.builder()
                 .text("⬅\uFE0F")
-                .callbackData("FreeDateMessageButton#"+ "back#" + DateTime.now())
+                .callbackData("FreeDateMessageButton#"+ "back#" + dateTime)
                 .build());
 
         row.add(InlineKeyboardButton.builder()
                 .text("➡\uFE0F")
-                .callbackData("FreeDateMessageButton#"+ "forward#" + DateTime.now())
+                .callbackData("FreeDateMessageButton#"+ "forward#" + dateTime)
                 .build());
-
         keyboards.add(row);
         markupLine.setKeyboard(keyboards);
 
-        return SendMessage.builder()
+        return EditMessageText.builder()
                 .chatId(chatId)
+                .messageId(update.getCallbackQuery().getMessage().getMessageId())
                 .text(message)
                 .replyMarkup(markupLine)
                 .build();
@@ -82,6 +93,7 @@ public class FreeDateMessage extends Message{
 
     @Override
     public boolean support(String cmd) {
-        return cmd.equals("/freedate");
+        return cmd.startsWith("FreeDateMessageButton");
     }
+
 }
